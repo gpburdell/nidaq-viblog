@@ -3,17 +3,27 @@
 Status legend: ☐ not started · ◐ in progress · ✅ done
 (Planned 2026-08-02 in the viblog session; coded in its own session.)
 
-## Phase 0 — Bootstrap + upstream chunk path ☐
+## Phase 0 — Bootstrap + upstream chunk path ✅ (coded 2026-08-02)
 
-- ☐ Repo scaffold in `C:\Temp\nidaq`: pyproject (uv, Python 3.13), package
-  `nidaq_viblog`, viblog dependency (git + local path override for dev)
-- ☐ **Upstream PR to hbk_viblog**: chunk-native source path in the runner
-  (move per-sweep→array conversion into the MSCL source; simulator gains a
-  chunk mode) — keeps one shared runner for both projects
-- ☐ `nidaqmx` dependency + driver check command (`python -m nidaqmx installdriver`;
-  NI-DAQmx runtime must be on the machine)
-- ☐ Simulated end-to-end proof: viblog SimSource through this repo's CLI —
-  confirms the dependency wiring before hardware exists
+- ✅ Repo scaffold in `C:\Temp\nidaq`: pyproject (uv, Python ≥3.11 — matched to
+  the on-machine viblog venv rather than 3.13), package `nidaq_viblog`, viblog
+  as an **editable local path dependency** (`[tool.uv.sources] viblog = { path
+  = "../mscl", editable = true }`; swap for the git source for off-machine repro)
+- ◐ **Upstream PR to hbk_viblog** (chunk-native source path): **deferred, not
+  required.** `NidaqSource` emits per-sample `SweepData` and viblog's existing
+  runner does its own `contiguous_runs` regrouping — this works with *unmodified*
+  viblog, and at the default 2560 S/s the per-sample overhead is negligible
+  (proven: 7.5k sweeps/3 s, 0 gaps). Keep the chunk PR as a throughput
+  optimization for sustained 51.2 kS/s × 4 ch runs (see ARCHITECTURE §3), not a
+  blocker. Revisit in phase 6 if the drain benchmark (spike 03) shows the
+  per-sample path is the bottleneck.
+- ✅ `nidaqmx` dependency + driver check command: `nidaq-viblog devices`
+  enumerates NI-DAQmx devices and prints the `python -m nidaqmx installdriver`
+  hint when the runtime is absent (degrades cleanly — verified without a driver)
+- ✅ Simulated end-to-end proof: **both** paths run through this repo's CLI —
+  `--simulate` (viblog's own SimSource, the dependency-wiring proof) and
+  `--sim-nidaq` (this project's `NidaqSource` + simulation backend). Automated
+  in `tests/test_end_to_end.py`; full suite green (20 tests)
 
 ## Phase 1 — Hardware bench spike ☐ (needs cDAQ + NI-9234 + one IEPE sensor)
 
@@ -40,18 +50,25 @@ findings recorded in HARDWARE_NOTES.
 Exit: rates/throughput/overflow/IEPE behavior verified; NidaqSource design
 assumptions confirmed or corrected in HARDWARE_NOTES.
 
-## Phase 2 — NidaqSource + config (record mode) ☐
+## Phase 2 — NidaqSource + config (record mode) ◐ (code landed ahead of the hardware gate, sim-verified)
 
-- ☐ Config schema (`source: nidaq`, chassis/modules/channels/sensor table)
-  with validation (native-rate check, sensitivity sanity, range-vs-threshold
-  warning for 10 V/g sensors on ±5 V inputs)
-- ☐ `NidaqSource` implementing the (chunk-native) viblog source protocol:
-  startup IEPE bias check → task build → drain → chunks; synthesized sample
-  counter feeding the existing gap ledger; overflow → ledger gap + health flag
-- ☐ Device identity + sensor table + task readback into session.json
-- ☐ `viblog run`-equivalent CLI in this repo (thin wrapper choosing the source)
-- ☐ Bench validation: 30-min record session, tick ledger clean, review renders
-- **Field-usable wired logger at end of this phase**
+- ✅ Config schema (`source: nidaq`, chassis/modules/channels/sensor table) with
+  validation (`config.py`): native-rate check (rejects off-ladder, names the
+  coerced rate), sensitivity sanity, range-vs-threshold warning for 10 V/g
+  sensors on ±5 V inputs, unique module indices
+- ✅ `NidaqSource` (`nidaq_source.py`) implementing viblog's per-sample source
+  protocol via an injectable `ReaderBackend` (`backends.py`: real `NidaqmxBackend`
+  + hardware-free `SimBackend`): startup IEPE bias check → task build → drain →
+  per-sample `SweepData`; sample index from the device's own cumulative counter
+  (`total_acquired − avail`) → synthesized uint16 tick feeding the existing gap
+  ledger; overflow → ledger gap + loud health flag (unit-tested deterministically)
+- ✅ Device identity + sensor table + IEPE bias + requested/actual rate readback
+  into session.json (verified in the sim run)
+- ✅ `nidaq-viblog run` CLI (thin wrapper choosing source; `--simulate` /
+  `--sim-nidaq` / real)
+- ☐ **Bench validation (needs hardware): 30-min record session, tick ledger
+  clean, `viblog review` renders.** This is the remaining phase-2 gate.
+- **Field-usable wired logger pending only the bench validation above**
 
 ## Phase 3 — Monitor mode + trigger validation ☐
 

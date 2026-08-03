@@ -1,0 +1,54 @@
+# Bench config: one NI-9234, one PCB 393B05 on ai0, 2560 S/s (NIH-matched rate).
+site: bench
+mode: record
+output_dir: sessions
+source: nidaq
+
+nidaq:
+  chassis: cDAQ1
+  rate_hz: 2560
+  bias_check: true
+  modules:
+    - device: cDAQ1Mod1
+      channels:
+        - physical: ai0
+          sensor: {model: PCB 393B05, sn: "12345", sensitivity_mv_per_g: 10000}
+          iepe: true
+          excitation_a: 0.002
+          coupling: ac
+          orientation: "vertical (Z), slab midbay"
+
+raw:
+  segment_seconds: 60
+
+processing:
+  enabled: true
+  window_s: 1.0
+  hp_hz: 0.5
+  modalities: [accel]
+  segment_seconds: 900
+
+trigger:
+  enabled: false
+  threshold_g: 0.01
+  channels: []
+  pre_roll_s: 10
+  post_roll_s: 30
+  hold_off_s: 5
+
+ring_seconds: 120
+
+control:
+  port: 47555
+
+poll_ms: 100
+health_interval_s: 5
+
+simulate:
+  nodes:
+    - address: 1
+      sample_rate_hz: 2560
+      n_channels: 1
+      tones: [[12.5, 0.001], [50.0, 0.0005]]
+      gaps: []
+      bursts: [[3.0, 3.2, 30.0, 0.05]]

@@ -1,0 +1,34 @@
+[project]
+name = "nidaq-viblog"
+version = "0.1.0"
+description = "Wired vibration logging & monitoring on NI DAQ (NI-9234 / cDAQ / nidaqmx) — a thin NI-specific source over the viblog acquisition/DSP/UI stack (AISC DG11 Ch.6 / VC curves, DG11 Ch.3-4 footfall)."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "viblog",
+    "nidaqmx>=1.0",
+    "numpy>=2.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+nidaq-viblog = "nidaq_viblog.cli:main"
+
+# viblog is consumed as a library (ARCHITECTURE.md §1). Option B for on-machine
+# development: editable local path to the sibling checkout. Swap for the git
+# source (Option A) for reproducible installs off this machine:
+#   viblog = { git = "https://github.com/gpburdell/hbk_viblog" }
+[tool.uv.sources]
+viblog = { path = "../mscl", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nidaq_viblog"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]

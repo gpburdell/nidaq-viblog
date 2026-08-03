@@ -16,9 +16,13 @@ plan from documentation, verify every load-bearing number on the bench.
   17.067k, 12.8k, 10.24k, … , **2560 (n=20)** … down to **~1651.6 S/s minimum**
   (verify n range). Requested rates are **coerced to the ladder** — always read
   back `task.timing.samp_clk_rate`.
-  - Consequence: **no native 512/1024/2048 Hz.** For VC/DG11 bands (≤100 Hz)
-    acquire at 2560 S/s (matches the NIH reference datasets exactly:
-    `wf_increment = 0.000390625 = 1/2560`) and decimate in software if wanted.
+  - Consequence: **no native 512 Hz (n=100) or 1024 Hz (n=50)** — both need a
+    divisor past n=31. **Correction (verified in `rates.py` / `test_rates.py`):
+    2048 Hz *is* native** — 2048 = 51200/25 (n=25 ≤ 31), pure arithmetic, not
+    hardware-dependent; the earlier "no native …/2048" note was wrong. For
+    VC/DG11 bands (≤100 Hz) acquire at 2560 S/s (matches the NIH reference
+    datasets exactly: `wf_increment = 0.000390625 = 1/2560`) and decimate in
+    software if wanted; 2048 is available if a power-of-two rate is preferred.
 - **IEPE excitation ~2 mA** per channel, software-selectable per channel (verify
   exact value/options); AC or DC coupling per channel, AC cutoff **~0.5 Hz** (verify)
 - Anti-aliasing is inherent to the delta-sigma converters and tracks the data

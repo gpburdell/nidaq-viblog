@@ -1,5 +1,15 @@
+# Python
 __pycache__/
+*.py[cod]
 .venv/
 *.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Acquisition output
 sessions/
 *.parquet
+
+# OS
+Thumbs.db
+.DS_Store
